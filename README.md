@@ -1,12 +1,11 @@
-# Re:Ultimate
+# Revival Ultimate
 
 A mod pack of Super Smash Bros. Ultimate that with add mechanics.
-If you want to contribute to Re:Ultimate (Ultimate Revival), pull requests are welcome!
+If you want to contribute to Revival Ultimate (Re:U), pull requests are welcome!
 
 Changelog: https://docs.google.com/document/d/1DwDjlTrylgeAsLCDBbUH1ND-EkcN3mpMlnUCvXsrh70/edit?usp=sharing
 
 
 
 ## Legal Disclaimer
-Re:Ultimate and its creators do not condone any forms of piracy or other illegal actions that may damage Nintendo or other relevant copyright holders.
-Re:Ultimate is not endorsed by Nintendo or other copyright holders involved in Smash Ultimate. This repository does not contain copyrighted code.
+The Project Revival Dev Team does not support piracy or any illegal actions that may harm Nintendo or other copyright holders involved in the base game, and their intellectual properties. Revival Ultimate is not endorsed by or associated with Nintendo or any of the companies involved with the Super Smash Bros. series in any way nor this repository does not contain copyrighted executable code.
