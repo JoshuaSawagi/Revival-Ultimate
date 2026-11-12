@@ -55,11 +55,9 @@ unsafe fn change_status_request_from_script_hook(boma: &mut BattleObjectModuleAc
     original!()(boma, next_status, clear_buffer)
 }
 
-
 pub fn install() {
     skyline::install_hooks!(
         init_settings_hook,
-        //change_status_request_hook,
         change_status_request_from_script_hook
     );
 }

@@ -1,6 +1,5 @@
 use super::*;
 use globals::*;
-
 //=================================================================
 //== init_settings for edge_slipoffs module
 //== Note: This is called from init_settings::init_settings_hook
@@ -101,161 +100,21 @@ pub unsafe fn init_settings_edges(boma: &mut BattleObjectModuleAccessor, situati
     return fix
 }
 
-//=================================================================
-//== GroundModule::correct
-//== Note: This is the "can edge slippoff" function in Smash
-//=================================================================
-#[skyline::hook(replace=GroundModule::correct)]
-unsafe fn correct_hook(boma: &mut BattleObjectModuleAccessor, kind: GroundCorrectKind) -> u64 {
+#[skyline::hook(replace = GroundModule::correct)]
+pub unsafe fn correct_hook(boma: &mut app::BattleObjectModuleAccessor, param_2: u64) -> u64{
 
-    // don't run if boma is not fighter or grounded
-    if !boma.is_fighter()
-    || !boma.is_situation(*SITUATION_KIND_GROUND)
-    || VarModule::is_flag(boma.object(), vars::common::instance::TEMPORARY_CLIFF_STOP) {
-        return original!()(boma, kind);
+    if boma.is_fighter() {
+        let status_kind = StatusModule::status_kind(boma);
+        if [/*Air Dodge*/ 0x22, /*Landing*/0x16, /*Run brake*/0x5, /*Turn Dash*/0x7, /*Dash*/0x3].contains(&status_kind) {
+            return original!()(boma, *GROUND_CORRECT_KIND_GROUND as u64);
+        }
     }
-
-    let status_kind = StatusModule::status_kind(boma);
-    if [
-        // common statuses that should edge slipoff
-        *FIGHTER_STATUS_KIND_LANDING,
-        *FIGHTER_STATUS_KIND_TURN_DASH,
-        *FIGHTER_STATUS_KIND_DASH,
-        *FIGHTER_STATUS_KIND_LANDING_FALL_SPECIAL,
-        *FIGHTER_STATUS_KIND_DAMAGE,
-        *FIGHTER_STATUS_KIND_TREAD_DAMAGE,
-        *FIGHTER_STATUS_KIND_TREAD_DAMAGE_RV,
-        *FIGHTER_STATUS_KIND_LANDING_DAMAGE_LIGHT,
-        *FIGHTER_STATUS_KIND_DAMAGE_SONG,
-        *FIGHTER_STATUS_KIND_DAMAGE_SLEEP_START,
-        *FIGHTER_STATUS_KIND_DAMAGE_SLEEP,
-        *FIGHTER_STATUS_KIND_DAMAGE_SLEEP_END,
-        *FIGHTER_STATUS_KIND_DOWN_DAMAGE,
-        *FIGHTER_STATUS_KIND_SAVING_DAMAGE
-    ].contains(&status_kind)
-    || check_fighter_edge_slipoffs(boma).get_bool() {
-        return original!()(boma, GroundCorrectKind(*GROUND_CORRECT_KIND_GROUND));
-    }
-
-    original!()(boma, kind)
+    original!()(boma, param_2)
 }
-
-unsafe fn check_fighter_edge_slipoffs(boma: &mut BattleObjectModuleAccessor) -> L2CValue {
-    let status_kind = StatusModule::status_kind(boma);
-    let fighter_kind = boma.kind();
-
-    // PIKACHU & PICHU
-    if (fighter_kind == *FIGHTER_KIND_PIKACHU || fighter_kind == *FIGHTER_KIND_PICHU) 
-    && [
-        *FIGHTER_PIKACHU_STATUS_KIND_SPECIAL_S_WEAK,
-        *FIGHTER_PIKACHU_STATUS_KIND_SPECIAL_S_ATTACK,
-        *FIGHTER_PIKACHU_STATUS_KIND_SPECIAL_S_END
-    ].contains(&status_kind) {
-        return true.into();
-    }
-    
-    // CAPTAIN FALCON
-    if fighter_kind == *FIGHTER_KIND_CAPTAIN && status_kind == *FIGHTER_CAPTAIN_STATUS_KIND_SPECIAL_LW_END { return true.into(); }
-    
-    // GANONDORF
-    if (fighter_kind == *FIGHTER_KIND_GANON && status_kind == *FIGHTER_GANON_STATUS_KIND_SPECIAL_LW_END) { return true.into(); }
-    
-    // MII SWORDFIGHTER
-    if fighter_kind == *FIGHTER_KIND_MIISWORDSMAN
-    && (
-        [*FIGHTER_MIISWORDSMAN_STATUS_KIND_SPECIAL_LW3_END].contains(&status_kind) 
-        || (
-            WorkModule::get_int(boma, *FIGHTER_INSTANCE_WORK_ID_INT_WAZA_CUSTOMIZE_TO) == *FIGHTER_WAZA_CUSTOMIZE_TO_SPECIAL_LW_3 
-            && boma.is_status(*FIGHTER_STATUS_KIND_SPECIAL_LW)
-        )
-    ) { 
-        return true.into(); 
-    }
-    
-    // BOWSER
-    if (fighter_kind == *FIGHTER_KIND_KOOPA && status_kind == *FIGHTER_KOOPA_STATUS_KIND_SPECIAL_HI_G) { return true.into(); }
-
-    // DONKEY KONG
-    if (fighter_kind == *FIGHTER_KIND_DONKEY && status_kind == *FIGHTER_STATUS_KIND_SPECIAL_HI) { return true.into(); }
-
-    // GAOGAEN
-    if (fighter_kind == *FIGHTER_KIND_GAOGAEN && status_kind == *FIGHTER_STATUS_KIND_SPECIAL_N) { return true.into(); }
-    if (fighter_kind == *FIGHTER_KIND_KIRBY && status_kind == *FIGHTER_KIRBY_STATUS_KIND_GAOGAEN_SPECIAL_N) { return true.into(); }
-
-    // LUIGI
-    if (fighter_kind == *FIGHTER_KIND_LUIGI && status_kind == *FIGHTER_STATUS_KIND_SPECIAL_N) { return true.into(); }
-    if (fighter_kind == *FIGHTER_KIND_KIRBY && status_kind == *FIGHTER_KIRBY_STATUS_KIND_LUIGI_SPECIAL_N) { return true.into(); }
-
-    // SEPHIROTH
-    if (fighter_kind == *FIGHTER_KIND_EDGE && status_kind == *FIGHTER_EDGE_STATUS_KIND_SPECIAL_HI_RUSH) { return true.into(); }
-    
-    // YOSHI
-    if (fighter_kind == *FIGHTER_KIND_YOSHI && status_kind == *FIGHTER_STATUS_KIND_SPECIAL_HI) { return true.into(); }
-    
-    // PAC-MAN
-    if (fighter_kind == *FIGHTER_KIND_PACMAN && status_kind == *FIGHTER_PACMAN_STATUS_KIND_SPECIAL_S_RETURN) { return true.into(); }
-    
-    // SORA
-    if (fighter_kind == *FIGHTER_KIND_TRAIL && status_kind == *FIGHTER_TRAIL_STATUS_KIND_SPECIAL_S_END) { return true.into(); }
-    
-    // CHARIZARD
-    if (fighter_kind == *FIGHTER_KIND_PLIZARDON && status_kind == *FIGHTER_PLIZARDON_STATUS_KIND_SPECIAL_S_END) { return true.into(); }
-
-    //KING DEDEDE
-    if fighter_kind == *FIGHTER_KIND_DEDEDE 
-    && [
-        *FIGHTER_STATUS_KIND_SPECIAL_S,
-        *FIGHTER_DEDEDE_STATUS_KIND_SPECIAL_HI_FAILURE,
-        *FIGHTER_DEDEDE_STATUS_KIND_SPECIAL_LW_ATTACK
-    ].contains(&status_kind){
-            return true.into();
-    }
-    
-    // NESS
-    if fighter_kind == *FIGHTER_KIND_NESS 
-    && [
-        *FIGHTER_STATUS_KIND_SPECIAL_HI,
-        *FIGHTER_NESS_STATUS_KIND_SPECIAL_HI_REFLECT,
-        *FIGHTER_NESS_STATUS_KIND_SPECIAL_HI_HOLD,
-        *FIGHTER_NESS_STATUS_KIND_SPECIAL_HI_END
-    ].contains(&status_kind) {
-        return true.into();
-    }
-
-    // LUCAS
-    if fighter_kind == *FIGHTER_KIND_LUCAS 
-    && [
-        *FIGHTER_STATUS_KIND_SPECIAL_HI,
-        *FIGHTER_LUCAS_STATUS_KIND_SPECIAL_HI_REFLECT,
-        *FIGHTER_LUCAS_STATUS_KIND_SPECIAL_HI_HOLD,
-        *FIGHTER_LUCAS_STATUS_KIND_SPECIAL_HI_END
-    ].contains(&status_kind) {
-        return true.into();
-    }
-
-    return false.into();
-}
-
-extern "C" {
-    #[link_name = "\u{1}_ZN3app11FighterUtil33get_ground_correct_kind_air_transERNS_26BattleObjectModuleAccessorEi"]
-    fn get_ground_correct_kind_air_trans(boma: &mut BattleObjectModuleAccessor, something: i32) -> i32;
-}
-
-//=================================================================
-//== FighterUtil::get_ground_correct_kind_air_trans
-//== Note: Aerial ECB fixes for Link, Captain, Simon, Richter
-//=================================================================
-#[skyline::hook(replace=get_ground_correct_kind_air_trans)]
-unsafe fn get_ground_correct_kind_air_trans_hook(boma: &mut BattleObjectModuleAccessor, something: i32) -> i32 {
-    return *GROUND_CORRECT_KIND_AIR;
-}
-
 
 pub fn install() {
     skyline::install_hooks!(
-        correct_hook,
-        get_ground_correct_kind_air_trans_hook,
-        //can_entry_cliff_hook
+        correct_hook
     );
 }
 

@@ -7,23 +7,26 @@ pub mod energy;
 pub mod kinetic;
 pub mod momentum_transfer;
 pub mod transition;
+pub mod jumps;
 mod lua_bind_hook;
+mod game;
 
 pub fn install() {
     controls::install();
     energy::install();
     kinetic::install();
     momentum_transfer::install();
+    //jumps::install();
     transition::install();
     lua_bind_hook::install();
-    //jumps::install();
+    game::install();
 
     unsafe {
-        
+        /*
         const KILL_ZOOM_DATA: u32 = 0xD503201Fu32;
         skyline::patching::Patch::in_text(utils::offsets::kill_zoom_regular()).nop();
         skyline::patching::Patch::in_text(utils::offsets::kill_zoom_throw()).data(KILL_ZOOM_DATA);
-        
+        */
         // Allows airtime counter (FIGHTER_INSTANCE_WORK_ID_INT_FRAME_IN_AIR)
         // to increment when on ledge (SITUATION_KIND_CLIFF)
         // Matches Melee behavior

@@ -42,19 +42,13 @@ unsafe fn is_enable_transition_term_hook(boma: &mut BattleObjectModuleAccessor, 
         if flag == *FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_WALK && [*FIGHTER_STATUS_KIND_DASH, *FIGHTER_STATUS_KIND_TURN_DASH].contains(&status_kind) && MotionModule::frame(boma) < ((MotionModule::end_frame(boma) * 0.5645).ln()) * 9.2157 {
             return false;
         }
-        
-        // Allow jump => meteor
-        if [*FIGHTER_STATUS_KIND_DAMAGE_FLY_METEOR].contains(&flag)
-            && [*FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_JUMP_AERIAL].contains(&status_kind) {
-            return true;
-        }
-    
+
         // Allow dash, run, run_brake => taunt
         if [*FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_APPEAL_U, *FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_APPEAL_S, *FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_APPEAL_LW].contains(&flag)
             && [*FIGHTER_STATUS_KIND_RUN_BRAKE].contains(&status_kind) {
             return true;
         }
-    
+
         if flag == *FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_SPECIAL_HI && VarModule::is_flag(boma.object(), vars::common::instance::UP_SPECIAL_CANCEL) {
             return false;
         }

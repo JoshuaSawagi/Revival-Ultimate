@@ -106,7 +106,6 @@ pub unsafe fn additionalTransfer(lua_state: u64, l2c_agent: &mut L2CAgent, boma:
 }
 
 pub unsafe extern "C" fn run(fighter : &mut L2CFighterCommon) {
-    JostleModule::set_team(fighter.module_accessor, 0);
     let lua_state = fighter.lua_state_agent;
     let mut l2c_agent = L2CAgent::new(lua_state);
     let module_accessor = &mut *fighter.module_accessor;

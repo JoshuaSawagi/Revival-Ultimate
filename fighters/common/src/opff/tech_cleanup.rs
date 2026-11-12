@@ -17,7 +17,6 @@ use smash::hash40;
 
 // Ended up removing buffered backwards tilts/smashes/side specials out of wavedash, will return to this after figuring that out
 unsafe fn wavedash_turn_clear(boma: &mut BattleObjectModuleAccessor, cat1: i32, status_kind: i32, situation_kind: i32) {
-
     if [*FIGHTER_STATUS_KIND_ESCAPE_AIR].contains(&StatusModule::prev_status_kind(boma, 0))
         && [*FIGHTER_STATUS_KIND_LANDING_LIGHT, *FIGHTER_STATUS_KIND_LANDING].contains(&StatusModule::status_kind(boma)){
         WorkModule::unable_transition_term(boma, *FIGHTER_STATUS_TRANSITION_TERM_ID_CONT_TURN);

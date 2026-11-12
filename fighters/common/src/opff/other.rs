@@ -96,21 +96,6 @@ pub extern "C" fn right_stick_flick_counter(fighter: &mut L2CFighterCommon) {
         }
     }
 }
-
-pub unsafe fn ecb_shift_disabled_motions(fighter: &mut L2CFighterCommon) {
-    if ( (fighter.kind() == *FIGHTER_KIND_SZEROSUIT
-            && fighter.is_motion(Hash40::new("attack_air_hi")))
-        || (fighter.kind() == *FIGHTER_KIND_PALUTENA
-            && fighter.is_motion(Hash40::new("attack_air_n")))
-        || (fighter.kind() == *FIGHTER_KIND_GANON
-            && fighter.is_motion_one_of(&[Hash40::new("attack_air_n"), Hash40::new("attack_air_lw"), Hash40::new("attack_air_hi")])) )
-        
-    && !VarModule::is_flag(fighter.battle_object, vars::common::status::DISABLE_ECB_SHIFT)
-    {
-        VarModule::on_flag(fighter.battle_object, vars::common::status::DISABLE_ECB_SHIFT);
-    }
-}
-
 pub unsafe fn cliff_xlu_frame_counter(fighter: &mut L2CFighterCommon) {
     let cliff_xlu = VarModule::get_int(fighter.battle_object, vars::common::instance::CLIFF_XLU_FRAME);
     // If you have ledge intan frames left
@@ -126,37 +111,30 @@ pub unsafe fn cliff_xlu_frame_counter(fighter: &mut L2CFighterCommon) {
     }
 }
 
-// Teeter cancelling
-pub unsafe fn teeter_cancel(fighter: &mut L2CFighterCommon, boma: &mut BattleObjectModuleAccessor) {
-    if (boma.is_situation(*SITUATION_KIND_GROUND)
-        && boma.is_status_one_of(&[
-            *FIGHTER_STATUS_KIND_WAIT,
-            *FIGHTER_STATUS_KIND_DASH,
-            *FIGHTER_STATUS_KIND_RUN_BRAKE,
-            *FIGHTER_STATUS_KIND_APPEAL,
-            *FIGHTER_STATUS_KIND_LANDING,
-            *FIGHTER_STATUS_KIND_LANDING_LIGHT,
-            *FIGHTER_STATUS_KIND_LANDING_ATTACK_AIR,
-            *FIGHTER_STATUS_KIND_LANDING_FALL_SPECIAL,
-            *FIGHTER_STATUS_KIND_LANDING_DAMAGE_LIGHT,
-        ])
-        && ((KineticModule::get_sum_speed_x(
-            fighter.module_accessor,
-            *KINETIC_ENERGY_RESERVE_ATTRIBUTE_ALL,
-        ) - KineticModule::get_sum_speed_x(
-            fighter.module_accessor,
-            *KINETIC_ENERGY_RESERVE_ATTRIBUTE_GROUND,
-        ) - KineticModule::get_sum_speed_x(
-            fighter.module_accessor,
-            *KINETIC_ENERGY_RESERVE_ATTRIBUTE_EXTERN,
-        )) * PostureModule::lr(boma))
-            > 0.0)
-    {
-        // Conditions for transitioning to teeter animation in sub_ground_check_ottotto
-        if (GroundModule::is_ottotto(boma, 1.72) // Original value: 0.86
-        && fighter.left_stick_x().abs() < 0.75)
-        {
-            fighter.change_status(FIGHTER_STATUS_KIND_OTTOTTO.into(), true.into());
+pub unsafe extern "C" fn held_buffer(fighter : &mut L2CFighterCommon) {
+    let module_accessor = &mut *fighter.module_accessor;
+    let situation_kind = StatusModule::situation_kind(fighter.module_accessor);
+    let status_kind = StatusModule::status_kind(fighter.module_accessor);
+    let fighter_kind = get_kind(module_accessor);
+    let cat1 = ControlModule::get_command_flag_cat(fighter.module_accessor, 0);
+    let cat2 = ControlModule::get_command_flag_cat(fighter.module_accessor, 1);
+    let cat3 = ControlModule::get_command_flag_cat(fighter.module_accessor, 2);
+    let stick_value_y = ControlModule::get_stick_y(fighter.module_accessor);
+    let stick_value_x = ControlModule::get_stick_x(fighter.module_accessor);
+    let motion_kind = MotionModule::motion_kind(fighter.module_accessor);
+    let curr_frame = MotionModule::frame(fighter.module_accessor);
+    let kinetic_type = KineticModule::get_kinetic_type(fighter.module_accessor);
+    let control_pad = [
+        *CONTROL_PAD_BUTTON_APPEAL_HI, *CONTROL_PAD_BUTTON_APPEAL_LW, *CONTROL_PAD_BUTTON_APPEAL_S_L, *CONTROL_PAD_BUTTON_APPEAL_S_R, *CONTROL_PAD_BUTTON_ATTACK, *CONTROL_PAD_BUTTON_ATTACK_RAW, *CONTROL_PAD_BUTTON_CATCH, *CONTROL_PAD_BUTTON_CSTICK_ON,
+        *CONTROL_PAD_BUTTON_FLICK_JUMP, *CONTROL_PAD_BUTTON_GUARD, *CONTROL_PAD_BUTTON_GUARD_HOLD, *CONTROL_PAD_BUTTON_INVALID, *CONTROL_PAD_BUTTON_JUMP, *CONTROL_PAD_BUTTON_JUMP_MINI, *CONTROL_PAD_BUTTON_SMASH, *CONTROL_PAD_BUTTON_SPECIAL, 
+        *CONTROL_PAD_BUTTON_SPECIAL_RAW, *CONTROL_PAD_BUTTON_SPECIAL_RAW2, *CONTROL_PAD_BUTTON_STOCK_SHARE, *CONTROL_PAD_BUTTON_TERM, *CONTROL_PAD_CLATTER_CAUSE_NONE, *CONTROL_PAD_CLATTER_FLOWER, *CONTROL_PAD_CLATTER_MAIN, *CONTROL_PAD_CLATTER_NONE,
+        *CONTROL_PAD_CLATTER_TERM, *CONTROL_PAD_STICK_REVERSE_ALL, *CONTROL_PAD_STICK_REVERSE_NONE, *CONTROL_PAD_STICK_REVERSE_X, *CONTROL_PAD_STICK_REVERSE_Y
+    ];
+    for i in control_pad {
+        if ControlModule::get_trigger_count(module_accessor, i as u8) > 15 && ControlModule::check_button_on(module_accessor, i)
+        && ![*FIGHTER_STATUS_KIND_GUARD, *FIGHTER_STATUS_KIND_GUARD_ON, *FIGHTER_STATUS_KIND_GUARD_DAMAGE, *FIGHTER_STATUS_KIND_GUARD_OFF, *FIGHTER_STATUS_KIND_JUMP_SQUAT].contains(&status_kind) {
+            ControlModule::reset_trigger(module_accessor);
+            ControlModule::clear_command(module_accessor, true);
         }
     }
 }
@@ -166,6 +144,5 @@ pub unsafe fn run(fighter: &mut L2CFighterCommon, boma: &mut BattleObjectModuleA
     right_stick_flick_counter(fighter);
     cliff_xlu_frame_counter(fighter);
     custom_dash_anim_support(fighter);
-    ecb_shift_disabled_motions(fighter);
-    teeter_cancel(fighter, boma);
+    //held_buffer(fighter);
 }

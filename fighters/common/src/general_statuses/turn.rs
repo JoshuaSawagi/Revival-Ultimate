@@ -18,7 +18,6 @@ pub unsafe fn status_turndash_sub_hook(fighter: &mut L2CFighterCommon) -> L2CVal
     l2c_agent.push_lua_stack(&mut L2CValue::new_int(*FIGHTER_KINETIC_ENERGY_ID_MOTION as u64));
     l2c_agent.push_lua_stack(&mut L2CValue::new_num(0.0));
     app::sv_kinetic_energy::set_speed(fighter.lua_state_agent);
-
     ret
 }
 
@@ -40,9 +39,6 @@ pub unsafe fn status_turndash_main_hook(fighter: &mut L2CFighterCommon) -> L2CVa
 		sv_kinetic_energy::set_speed(fighter.lua_state_agent);
 		f_agent.clear_lua_stack();
 	}
-	//println!("Current turn dash velocity: {}", KineticModule::get_sum_speed_x(boma, *KINETIC_ENERGY_RESERVE_ATTRIBUTE_MAIN));
-	//println!("Turn Dash status script main");
-
 	ret
 }
 

@@ -8,12 +8,11 @@ use smash_rs::app::camera::get_dead_area;
 use other::*;
 use momentum_holder::*;
 pub mod cancels;
-pub mod ledges;
 pub mod other;
 pub mod physics;
 pub mod momentum_transfer_line;
 pub mod momentum_holder;
-pub mod reset;
+//pub mod reset;
 use crate::StatusModule::status_kind;
 
 #[utils::export(common::opff)]
@@ -27,7 +26,7 @@ pub unsafe fn fighter_common_opff(fighter: &mut L2CFighterCommon) {
         panic!("Could not get the FrameInfo for this fighter! Is this even a fighter?")
     }
 }
-pub const PIVOT_STICK_SNAPBACK_WINDOW: f32 = 2.0;
+
 use utils::util::MATCH_EXITING;
 static mut IS_SALTY_INPUT: bool = false;
 
@@ -58,6 +57,8 @@ unsafe fn salty_check(fighter: &mut L2CFighterCommon) -> bool {
     }
 }
 
+pub const PIVOT_STICK_SNAPBACK_WINDOW: f32 = 2.0;
+
 pub unsafe fn moveset_edits(fighter: &mut L2CFighterCommon, info: &FrameInfo) {
     let boma = &mut *info.boma;
     
@@ -81,7 +82,8 @@ pub unsafe fn moveset_edits(fighter: &mut L2CFighterCommon, info: &FrameInfo) {
         IS_SALTY_INPUT = true;
         return;
     }
-
+    
+    /*Shield Drop*/
     if GroundModule::is_passable_ground(fighter.module_accessor)
         && VarModule::get_int(fighter.object(), vars::common::instance::LEFT_STICK_FLICK_Y) <= 6
         && fighter.left_stick_y() < fighter.get_param_float("common", "pass_stick_y")
@@ -94,6 +96,7 @@ pub unsafe fn moveset_edits(fighter: &mut L2CFighterCommon, info: &FrameInfo) {
         fighter.change_status_req(*FIGHTER_STATUS_KIND_PASS, true);
     }
 
+    /*Dash to Shield-Stops*/
     let status_kind = StatusModule::status_kind(boma);
     let cat1 = ControlModule::get_command_flag_cat(boma, 0);
     if status_kind == *FIGHTER_STATUS_KIND_DASH || status_kind == *FIGHTER_STATUS_KIND_TURN_DASH {
@@ -102,6 +105,7 @@ pub unsafe fn moveset_edits(fighter: &mut L2CFighterCommon, info: &FrameInfo) {
         }
     }
     
+    /*Pivots*/
     let dash_speed: f32 = WorkModule::get_param_float(boma, hash40("dash_speed"), 0);
     let mut pivot_boost: smash::phx::Vector3f = smash::phx::Vector3f {x: dash_speed * 0.75, y: 0.0, z: 0.0};
     let current_frame = MotionModule::frame(boma);
@@ -113,26 +117,20 @@ pub unsafe fn moveset_edits(fighter: &mut L2CFighterCommon, info: &FrameInfo) {
         && [*FIGHTER_STATUS_KIND_TURN_DASH, *FIGHTER_STATUS_KIND_DASH].contains(&StatusModule::prev_status_kind(boma, 0))
         && ![*FIGHTER_STATUS_KIND_WAIT, *FIGHTER_STATUS_KIND_TURN].contains(&StatusModule::prev_status_kind(boma, 1))
     {
-        /*
-        if current_frame == 3.0 {
-            pivot_boost.x = dash_speed * 0.35; // Reduce pivot speed boost if on the last frame of pivot leniency
-        }
-        */
-        
         PostureModule::reverse_lr(boma);
         StatusModule::change_status_request_from_script(boma, *FIGHTER_STATUS_KIND_TURN,true);
         KineticModule::clear_speed_all(boma);
         KineticModule::add_speed(boma, &pivot_boost);
     }
-    
-    cancels::run(boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
-    //ledges::run(fighter, boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
+
+
+
+    cancels::run(fighter, boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
     momentum_holder::run(fighter);
     momentum_transfer_line::run(fighter, info.lua_state, &mut *info.agent, boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
     other::run(fighter, boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
     physics::run(fighter, boma, info.cat, info.situation_kind, info.fighter_kind, info.status_kind, info.stick_y, info.facing, info.stick_x, info.frame);
-    reset::run(boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
-    
+    //reset::run(boma, info.cat, info.status_kind, info.situation_kind, info.fighter_kind, info.stick_x, info.stick_y, info.facing);
 }
 
 
@@ -179,6 +177,7 @@ pub unsafe fn status_attack_air_hook(fighter: &mut L2CFighterCommon, param_1: L2
 pub unsafe fn sys_line_system_control_fighter_hook(fighter: &mut L2CFighterCommon) -> L2CValue {
     left_stick_flick_counter(fighter);
     right_stick_flick_counter(fighter);
+    //held_buffer(fighter);
     original!()(fighter)
     
 }
